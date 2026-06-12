@@ -1,0 +1,33 @@
+# --- Python Cache ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# --- Conda / Virtual Environments ---
+# If your conda env is created inside this project folder (e.g., via 'conda create -p ./env')
+.env/
+env/
+venv/
+.venv/
+ENV/
+
+# --- FastAPI / App Secrets & Configs ---
+.env
+.env.*
+!.env.example  # Excellent practice: do NOT ignore the template file if you have one
+instance/
+.pytest_cache/
+
+# --- Mac System Files ---
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# --- IDEs and Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
