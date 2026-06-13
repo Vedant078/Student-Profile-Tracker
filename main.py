@@ -1,10 +1,14 @@
 from fastapi import FastAPI,Depends,HTTPException,status
 from contextlib import asynccontextmanager
 from pydantic import  BaseModel
-from sqlmodel import Session,select
-from typing import Optional
+from sqlmodel import Session,select,func
+from typing import Optional,List
 from database import init_db, get_session
 from models import StudentRecord, StudentUpdate
+
+class BranchAnalytics(BaseModel):
+    branch: str
+    average_cgpa: float
 
 @asynccontextmanager
 async def lifeSpan(app : FastAPI):
@@ -36,16 +40,24 @@ def create_student(student : StudentRecord, session:Session = Depends(get_sessio
 
 #read (R)
 @app.get("/getStudents",response_model = list[StudentRecord])
-def get_students(session : Session = Depends(get_session)):
+def get_students(name : Optional[str] = None,branch : Optional[str] = None,limit: int = 10,offset : int = 0,session : Session = Depends(get_session)):
 
     statement = select(StudentRecord)
+
+    if name:
+        statement = statement.where(StudentRecord.name==name)
+    if branch:
+        statement = statement.where(StudentRecord.branch == branch)
+
+    statement = statement.offset(offset).limit(limit)
     students = session.exec(statement).all()
+
     if students:
         return students
     else:
         raise HTTPException(status_code= 404 ,detail="student not found")
 
-
+# read specific (R)
 @app.get("/getStudent/{student_id}",response_model = StudentRecord)
 def get_student(student_id :int, session:Session = Depends(get_session)):
     student = session.get(StudentRecord,student_id)
@@ -81,3 +93,21 @@ def delete_student(student_id : int, session: Session = Depends(get_session)):
         session.delete(student)
         session.commit()
         return None
+    
+
+@app.get("/analysis",response_model = list[BranchAnalytics])
+def analysis(session:Session = Depends(get_session)):
+    statement = select(
+        StudentRecord.branch,
+        func.avg(StudentRecord.cgpa).label("Average CGPA")
+    ).group_by(StudentRecord.branch)
+
+    result = session.exec(statement).all()
+
+    analytics_data = []
+    for branch_name, avg_score in result:
+        analytics_data.append({
+            "branch": branch_name,
+            "average_cgpa": round(avg_score, 2) 
+        })
+    return analytics_data
