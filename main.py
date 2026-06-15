@@ -4,7 +4,14 @@ from pydantic import  BaseModel
 from sqlmodel import Session,select,func
 from typing import Optional,List
 from database import init_db, get_session
-from models import StudentRecord, StudentUpdate, Department
+from models import StudentRecord, StudentUpdate, Department, User, UserRegister, userOut
+from passlib.context import CryptContext
+
+def hash_pass(password:str)->str:
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    return pwd_context.hash(password)
+
+
 
 class BranchAnalytics(BaseModel):
     branch: str
@@ -151,10 +158,13 @@ def delete_student(student_id : int, session: Session = Depends(get_session)):
 
 @app.get("/analysis",response_model = list[BranchAnalytics])
 def analysis(session:Session = Depends(get_session)):
-    statement = select(
-        StudentRecord.branch,
+    statement = ( select(
+        Department.name.label("branch"),
         func.avg(StudentRecord.cgpa).label("Average CGPA")
-    ).group_by(StudentRecord.branch)
+    )
+    .join(Department)
+    .group_by(Department.name)
+    )
 
     result = session.exec(statement).all()
 
@@ -165,3 +175,30 @@ def analysis(session:Session = Depends(get_session)):
             "average_cgpa": round(avg_score, 2) 
         })
     return analytics_data
+
+
+@app.post("/register", response_model=userOut, status_code=status.HTTP_201_CREATED)
+def register(user: UserRegister, session: Session = Depends(get_session)):
+    user_repeated = session.exec(
+        select(User).where(
+            (User.username == user.username) | (User.email == user.email)
+        )
+    ).first()
+    
+    if user_repeated:
+        raise HTTPException(status_code=400, detail="Username or Email already registered")
+
+    secured_hash = hash_pass(user.password)
+    
+    db_user = User(
+        id=None,
+        username=user.username,
+        email=user.email,
+        password=secured_hash
+    )
+    
+    session.add(db_user)
+    session.commit()
+    session.refresh(db_user)
+    
+    return db_user
