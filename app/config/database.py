@@ -1,4 +1,3 @@
-import models
 from sqlmodel import SQLModel, Session, create_engine
 
 DATABASE_URL = "postgresql://localhost:5432/student_db"

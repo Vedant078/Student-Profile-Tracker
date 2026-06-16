@@ -41,3 +41,15 @@ class userOut(BaseModel):
     id : int
     username : str
     email : str
+
+class BranchAnalytics(BaseModel):
+    branch: str
+    average_cgpa: float
+
+
+class StudentProfileDetails(BaseModel):
+    student_id : int
+    student_name : str
+    cgpa : float
+    department_name : str
+    hod_name : str
