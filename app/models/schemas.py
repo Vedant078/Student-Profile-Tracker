@@ -53,3 +53,8 @@ class StudentProfileDetails(BaseModel):
     cgpa : float
     department_name : str
     hod_name : str
+
+
+class Userlogin(BaseModel):
+    email : EmailStr
+    password : str

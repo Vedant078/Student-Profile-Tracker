@@ -35,13 +35,5 @@ def update_department(department_id: int, department: Department, session: Sessi
     session.refresh(db_dept)
     return db_dept
 
-@router.delete("/delete/{dept_id}",status_code = 204)
-def delete_dept(dept_id : int, session:Session=Depends(get_session)):
-    dept = session.get(Department, dept_id)
-    if not dept:
-        raise HTTPException(status_code = 404, detail="Department not found")
-    
-    session.delete(dept)
-    session.commit()
-    return None
+
                 

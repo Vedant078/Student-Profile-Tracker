@@ -1,1 +1,1 @@
-from .schemas import Department, StudentRecord, StudentUpdate, StudentProfileDetails, BranchAnalytics, User, UserRegister, userOut
+from .schemas import Department, StudentRecord, StudentUpdate, StudentProfileDetails, BranchAnalytics, User, UserRegister, userOut,Userlogin
