@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select, func
 from typing import Optional
-
+from app.api.auth_routes import get_current_user, User
 from app.config.database import get_session
 from app.models.schemas import StudentRecord, StudentUpdate, StudentProfileDetails, BranchAnalytics, Department
 
 router = APIRouter(prefix="/students", tags=["Students"])
 
 @router.post("/createStudent", response_model=StudentRecord, status_code=status.HTTP_201_CREATED)
-def create_student(student: StudentRecord, session: Session = Depends(get_session)):
+def create_student(student: StudentRecord, session: Session = Depends(get_session), current_user : User = Depends(get_current_user) ):
     session.add(student)
     session.commit()
     session.refresh(student)
@@ -63,7 +63,11 @@ def update_student(student_id: int, student: StudentUpdate, session: Session = D
     return db_student
 
 @router.delete("/delete_student/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_student(student_id: int, session: Session = Depends(get_session)):
+def delete_student(student_id: int, 
+                   session: Session = Depends(get_session), 
+                   current_user : User = Depends(get_current_user)
+                ):
+    
     student = session.get(StudentRecord, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="student not found")

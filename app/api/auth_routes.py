@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm,OAuth2PasswordBearer
 from passlib.context import CryptContext
 import jwt
 from datetime import datetime,timedelta,timezone
-
 from app.config.database import get_session
 from app.models.schemas import User, UserRegister, userOut
+
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -15,6 +15,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = "mySecretKeyISSUperDupersecret"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRY_MINUTES = 30
+
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
 def hash_pass(password: str) -> str:
@@ -32,8 +35,30 @@ def create_access_token(data : dict):
     encode_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm = ALGORITHM)
     return encode_jwt
 
+def verify_access_token(token: str, credentials_exception):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms = [ALGORITHM])
+        username : str = payload.get("sub")
+        user_id : int = payload.get("user_id")
+        if username is None or user_id is None:
+            raise credentials_exception
 
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired")
+    
+    except jwt.InvalidTokenError:
+        raise credentials_exception
 
+def get_current_user(token: str = Depends(oauth2_scheme), session:Session=Depends(get_session)):
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    return verify_access_token(token, credentials_exception)
 
 
 @router.post("/register", response_model=userOut, status_code=status.HTTP_201_CREATED)
@@ -70,7 +95,7 @@ def get_user(id: int, session: Session = Depends(get_session)):
 
 @router.post("/login", status_code=status.HTTP_200_OK)
 def login_user(credentials:OAuth2PasswordRequestForm = Depends(), session : Session = Depends(get_session)):
-    user = user = session.exec(
+    user = session.exec(
         select(User).where(
             (User.email == credentials.username) | (User.username == credentials.username)
         )
