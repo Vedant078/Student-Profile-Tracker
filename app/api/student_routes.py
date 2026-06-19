@@ -9,6 +9,7 @@ router = APIRouter(prefix="/students", tags=["Students"])
 
 @router.post("/createStudent", response_model=StudentRecord, status_code=status.HTTP_201_CREATED)
 def create_student(student: StudentRecord, session: Session = Depends(get_session), current_user : User = Depends(get_current_user) ):
+    print(current_user)
     session.add(student)
     session.commit()
     session.refresh(student)

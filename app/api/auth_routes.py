@@ -57,8 +57,12 @@ def get_current_user(token: str = Depends(oauth2_scheme), session:Session=Depend
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    token_data = verify_access_token(token, credentials_exception)
     
-    return verify_access_token(token, credentials_exception)
+    print(f"Current User: {token_data.get('sub')}")
+    
+    return token_data
 
 
 @router.post("/register", response_model=userOut, status_code=status.HTTP_201_CREATED)
